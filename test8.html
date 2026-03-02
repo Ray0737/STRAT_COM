@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>STRATCOM | Minot Launch Simulation</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css" />
+
+</head>
+
+<body>
+
+    <header>
+        <div class="global-stats">
+            <div class="stat-item"><span id="g-deaths">0</span>
+                <div class="stat-label">TOTAL FATALITIES</div>
+            </div>
+            <div class="stat-item"><span id="g-active">0</span>
+                <div class="stat-label">MISSILES IN-FLIGHT</div>
+            </div>
+        </div>
+        <div style="font-weight: 900; letter-spacing: 3px; color: var(--red);">STRATCOM MONITOR</div>
+        <div class="header-controls">
+            <button class="btn-header" onclick="previewLayer.clearLayers()">CLEAR PREVIEWS</button>
+            <button class="btn-header" onclick="createNewCell()">+ ADD UNIT</button>
+            <button class="btn-header" onclick="resetAll()">RESET SYSTEM</button>
+        </div>
+    </header>
+
+    <div id="visibility-panel">
+        <div style="font-size: 0.5em; color: #444; margin-bottom: 5px;">VISIBILITY OVERLAYS</div>
+        <label class="v-toggle"><input type="checkbox" checked onchange="toggleLayer(siloLayer, this.checked)"> ICBM
+            SILO</label>
+        <label class="v-toggle"><input type="checkbox" checked onchange="toggleLayer(baseLayer, this.checked)"> US
+            MILITARY
+            BASES</label>
+        <label class="v-toggle"><input type="checkbox" checked onchange="toggleLayer(previewLayer, this.checked)">
+            IMPACT RADII</label>
+    </div>
+
+    <div class="detail-window" id="intel-window">
+        <div class="detail-header" id="intel-name">INTEL_REPORT</div>
+        <div class="detail-body" id="intel-content">SELECT ASSET FOR DATA...</div>
+        <button class="btn-sm" style="width:100%; margin-top:10px; background:#111; color:#666"
+            onclick="closeIntel()">CLOSE</button>
+    </div>
+    <div id="entry-protocol"
+        style="position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:10000; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono', monospace;">
+        <div style="width:500px; border:1px solid #444; background:#0a0a0a; padding:40px;">
+            <div
+                style="color:#FF3B3B; font-weight:bold; letter-spacing:3px; margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px;">
+                WARNING TO ALL USERS:
+            </div>
+
+            <div style="color:#EEE; font-size:0.8em; line-height:1.8; margin-bottom:30px;">
+                <p><span style="color:#FFD700;">[CLASSIFICATION]:</span> PROTOTYPE MOCK-UP / RESEARCH SIMULATION</p>
+
+                <p style="background:#1a1a1a; padding:10px; border-left:3px solid #FFD700;">
+                    <span style="color:#FFD700;">WARNING:</span> The coordinate data for "Flight A-O" United States ICBM
+                    Silos and United States Military
+                    Installations provided in this library are
+                    <span style="text-decoration:underline;">historically and geographically accurate</span> based on
+                    public records.
+                </p>
+
+                <p>This interface is a non-functional technical demonstration. It does not connect to any live defense
+                    networks. Users are strictly advised that these locations are restricted government property. Misuse
+                    of this information or trespassing is a federal offense.</p>
+            </div>
+
+            <button onclick="dismissEntry()"
+                style="width:100%; background:none; border:1px solid #FF3B3B; color:#FF3B3B; padding:15px; cursor:pointer; font-family:'IBM Plex Mono'; font-weight:bold; letter-spacing:2px; transition:0.3s;"
+                onmouseover="this.style.background='#400'" onmouseout="this.style.background='none'">
+                ACKNOWLEDGE & ENTER SYSTEM
+            </button>
+        </div>
+    </div>
+
+    <div id="map"></div>
+    <div id="deck"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+
+</html>
+
+</body>
+
+
+</html>

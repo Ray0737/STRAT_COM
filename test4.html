@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>STRATCOM TACTICAL | v5.0</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap');
+
+        :root {
+            --red: #FF3B3B;
+            --yellow: #FFD700;
+            --bg: #050505;
+            --panel: #0D0D0D;
+            --border: #222;
+            --font: 'IBM Plex Mono', monospace;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: #FFF;
+            font-family: var(--font);
+            text-transform: uppercase;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* --- CLEAN HEADER --- */
+        header {
+            height: 60px;
+            background: #000;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            z-index: 2000;
+            justify-content: space-between;
+        }
+
+        .global-stats {
+            display: flex;
+            gap: 40px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-item span {
+            font-size: 1.1em;
+            color: var(--yellow);
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.6em;
+            color: #666;
+            letter-spacing: 1px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-header {
+            background: none;
+            border: 1px solid #444;
+            color: #FFF;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 0.7em;
+            transition: 0.2s;
+        }
+
+        .btn-header:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* --- MAP --- */
+        #map {
+            flex-grow: 1;
+            width: 100%;
+            background: #000;
+        }
+
+        /* --- CONTROL DECK --- */
+        #deck {
+            height: 260px;
+            background: #000;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+
+        .msl-card {
+            min-width: 300px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .msl-card.targeting {
+            border-color: var(--yellow);
+        }
+
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .card-id {
+            font-size: 0.7em;
+            color: #444;
+        }
+
+        select {
+            background: #111;
+            color: #EEE;
+            border: 1px solid #333;
+            padding: 5px;
+            font-family: var(--font);
+            width: 100%;
+            font-size: 0.75em;
+        }
+
+        .btn-stack {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .btn-sm {
+            padding: 8px;
+            font-family: var(--font);
+            cursor: pointer;
+            font-size: 0.7em;
+            font-weight: bold;
+            border: 1px solid #333;
+        }
+
+        .target-btn {
+            color: var(--yellow);
+            background: none;
+            border-color: var(--yellow);
+        }
+
+        .target-btn.active {
+            background: var(--yellow);
+            color: #000;
+        }
+
+        .launch-btn {
+            background: var(--red);
+            color: #FFF;
+            border: none;
+            grid-column: span 2;
+        }
+
+        .launch-btn:disabled {
+            opacity: 0.1;
+            cursor: not-allowed;
+        }
+
+        .abort-btn {
+            background: #222;
+            color: #666;
+            border: none;
+        }
+
+        .abort-btn.active {
+            background: #400;
+            color: var(--red);
+            cursor: pointer;
+        }
+
+        .telemetry-display {
+            text-align: center;
+            background: #000;
+            padding: 10px;
+            border: 1px solid #1a1a1a;
+            margin: 5px 0;
+        }
+
+        .time-text {
+            font-size: 1.4em;
+            color: var(--yellow);
+        }
+
+        .preview-btn {
+            background: #111;
+            color: #555;
+            border-color: #333;
+        }
+
+        .preview-btn.active {
+            background: #004444;
+            color: #00FFCC;
+            border-color: #00FFCC;
+        }
+
+        .launch-label {
+            background: var(--yellow);
+            color: #000;
+            font-weight: bold;
+            padding: 2px 5px;
+            border: 1px solid #000;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="global-stats">
+            <div class="stat-item"><span id="g-deaths">0</span>
+                <div class="stat-label">TOTAL FATALITIES</div>
+            </div>
+            <div class="stat-item"><span id="g-active">0</span>
+                <div class="stat-label">MISSILES IN-FLIGHT</div>
+            </div>
+        </div>
+
+        <div style="font-weight: 900; letter-spacing: 3px; color: var(--red);">STRATCOM MONITOR</div>
+
+        <div class="header-controls">
+            <button class="btn-header" onclick="previewLayer.clearLayers()">CLEAR PREVIEWS</button>
+            <button class="btn-header" onclick="createNewCell()">+ ADD UNIT</button>
+            <button class="btn-header" onclick="resetAll()">RESET SYSTEM</button>
+        </div>
+    </header>
+
+    <div id="map"></div>
+    <div id="deck"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const MM3_KPH = 24140;
+        const siloPos = { lat: 48.4150, lng: -101.3270 };
+        const map = L.map('map', { zoomControl: false, center: [35, -40], zoom: 3 });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+        let activeCellId = null;
+        let impactLayer = L.layerGroup().addTo(map);
+        let trajectoryLayer = L.layerGroup().addTo(map);
+        let previewLayer = L.layerGroup().addTo(map);
+        let siteLayer = L.layerGroup().addTo(map);
+
+        function renderLaunchSite() {
+            const icon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div class="launch-label">SITE: MINOT_AFB</div>`,
+                iconSize: [100, 20],
+                iconAnchor: [50, 10]
+            });
+            L.marker([siloPos.lat, siloPos.lng], { icon: icon }).addTo(siteLayer);
+            L.circleMarker([siloPos.lat, siloPos.lng], { color: 'var(--yellow)', radius: 4 }).addTo(siteLayer);
+        }
+        renderLaunchSite();
+
+        function createNewCell() {
+            const id = Date.now();
+            const card = document.createElement('div');
+            card.className = 'msl-card';
+            card.id = `cell-${id}`;
+            card.innerHTML = `
+            <div class="card-row">
+                <span class="card-id">LGM-30G // UNIT_${id.toString().slice(-4)}</span>
+                <span id="status-${id}" style="font-size:0.6em; color:var(--yellow)">STANDBY</span>
+            </div>
+            <select class="sel-yield" id="yield-${id}" onchange="refreshPreview(${id})">
+                <option value="350">W87 (350 KT)</option>
+                <option value="475">W88 (475 KT)</option>
+                <option value="1200">B83 (1.2 MT)</option>
+            </select>
+            <div class="telemetry-display">
+                <div class="time-text" id="time-${id}">00:00</div>
+                <div id="dist-${id}" style="font-size:0.6em; color:#444">0 KM</div>
+            </div>
+            <div class="btn-stack">
+                <button class="btn-sm target-btn" id="t-btn-${id}" onclick="engageTargeting(${id})">SET TARGET</button>
+                <button class="btn-sm preview-btn" id="p-btn-${id}" onclick="togglePreview(${id})" disabled>VIEW RADIUS</button>
+                <button class="btn-sm abort-btn" id="a-btn-${id}" onclick="abortMissile(${id})" disabled>ABORT</button>
+                <button class="btn-sm launch-btn" id="l-btn-${id}" onclick="launch(${id})" disabled>CONFIRM LAUNCH</button>
+            </div>
+        `;
+            document.getElementById('deck').appendChild(card);
+        }
+
+        function togglePreview(id) {
+            const btn = document.getElementById(`p-btn-${id}`);
+            btn.classList.toggle('active');
+            refreshPreview(id);
+        }
+
+        function refreshPreview(id) {
+            const btn = document.getElementById(`p-btn-${id}`);
+            const cell = document.getElementById(`cell-${id}`);
+            if (!btn || !btn.classList.contains('active') || !cell.dataset.tLat) return;
+
+            const lat = parseFloat(cell.dataset.tLat);
+            const lng = parseFloat(cell.dataset.tLng);
+            const yieldKt = parseInt(document.getElementById(`yield-${id}`).value);
+
+            // Yield-based Radii (Metric)
+            const r1 = Math.pow(yieldKt, 0.4) * 110;
+            const r2 = Math.pow(yieldKt, 0.33) * 750;
+            const r3 = r2 * 2.5;
+            const r4 = r2 * 4.0;
+
+            const pGroup = L.layerGroup();
+            L.circle([lat, lng], { color: '#FFD700', weight: 1, fillOpacity: 0.2, radius: r1 }).addTo(pGroup);
+            L.circle([lat, lng], { color: '#FF3B3B', weight: 1, fillOpacity: 0.1, radius: r2 }).addTo(pGroup);
+            L.circle([lat, lng], { color: '#FF8C00', weight: 1, fillOpacity: 0.05, radius: r3 }).addTo(pGroup);
+            L.circle([lat, lng], { color: '#444', weight: 1, fillOpacity: 0, radius: r4 }).addTo(pGroup);
+
+            pGroup.addTo(previewLayer);
+        }
+
+        function engageTargeting(id) {
+            if (activeCellId) document.getElementById(`cell-${activeCellId}`).classList.remove('targeting');
+            activeCellId = id;
+            document.getElementById(`cell-${id}`).classList.add('targeting');
+            document.getElementById(`t-btn-${id}`).classList.add('active');
+        }
+
+        map.on('click', function (e) {
+            if (!activeCellId) return;
+            const cell = document.getElementById(`cell-${activeCellId}`);
+            const dist = getDist(siloPos.lat, siloPos.lng, e.latlng.lat, e.latlng.lng);
+            const flightTime = Math.round((dist / MM3_KPH) * 3600);
+
+            cell.dataset.tLat = e.latlng.lat;
+            cell.dataset.tLng = e.latlng.lng;
+            cell.dataset.seconds = flightTime;
+
+            document.getElementById(`dist-${activeCellId}`).innerText = `${Math.round(dist)} KM`;
+            document.getElementById(`time-${activeCellId}`).innerText = formatTime(flightTime);
+            document.getElementById(`l-btn-${activeCellId}`).disabled = false;
+            document.getElementById(`p-btn-${activeCellId}`).disabled = false;
+            document.getElementById(`status-${activeCellId}`).innerText = "LOCKED";
+
+            L.circleMarker(e.latlng, { color: 'var(--yellow)', radius: 3, weight: 1 }).addTo(impactLayer);
+
+            // If preview button is active, update it immediately on click
+            const pBtn = document.getElementById(`p-btn-${activeCellId}`);
+            if (pBtn && pBtn.classList.contains('active')) refreshPreview(activeCellId);
+        });
+
+        function launch(id) {
+            const cell = document.getElementById(`cell-${id}`);
+            const lat = parseFloat(cell.dataset.tLat);
+            const lng = parseFloat(cell.dataset.tLng);
+            const yieldKt = parseInt(document.getElementById(`yield-${id}`).value);
+
+            document.getElementById(`l-btn-${id}`).disabled = true;
+            document.getElementById(`t-btn-${id}`).disabled = true;
+
+            const abortBtn = document.getElementById(`a-btn-${id}`);
+            abortBtn.disabled = false;
+            abortBtn.classList.add('active');
+
+            document.getElementById(`status-${id}`).innerText = "IN-FLIGHT";
+            document.getElementById(`g-active`).innerText = parseInt(document.getElementById(`g-active`).innerText) + 1;
+
+            const line = L.polyline([[siloPos.lat, siloPos.lng], [lat, lng]], { color: 'red', weight: 1, dashArray: '4, 4' }).addTo(trajectoryLayer);
+            cell.dataset.lineId = L.stamp(line);
+
+            let remaining = parseInt(cell.dataset.seconds);
+            const timer = setInterval(() => {
+                if (cell.dataset.aborted === "true") {
+                    clearInterval(timer);
+                    return;
+                }
+                document.getElementById(`time-${id}`).innerText = formatTime(remaining);
+                if (remaining <= 0) {
+                    clearInterval(timer);
+                    detonate(lat, lng, yieldKt, id);
+                }
+                remaining--;
+            }, 1000);
+            cell.dataset.intervalId = timer;
+        }
+
+        function abortMissile(id) {
+            const cell = document.getElementById(`cell-${id}`);
+            cell.dataset.aborted = "true";
+            clearInterval(cell.dataset.intervalId);
+            const lineId = cell.dataset.lineId;
+            trajectoryLayer.eachLayer(l => { if (L.stamp(l) == lineId) trajectoryLayer.removeLayer(l); });
+            document.getElementById(`time-${id}`).innerText = "ABORTED";
+            document.getElementById(`status-${id}`).innerText = "CANCELLED";
+            document.getElementById(`a-btn-${id}`).disabled = true;
+            document.getElementById(`g-active`).innerText = Math.max(0, parseInt(document.getElementById(`g-active`).innerText) - 1);
+        }
+
+        function detonate(lat, lng, yieldKt, id) {
+            document.getElementById(`time-${id}`).innerText = "IMPACT";
+            document.getElementById(`g-active`).innerText = Math.max(0, parseInt(document.getElementById(`g-active`).innerText) - 1);
+
+            const fireballR = Math.pow(yieldKt, 0.4) * 110;
+            const blastR = Math.pow(yieldKt, 0.33) * 750;
+
+            L.circle([lat, lng], { color: 'orange', fillOpacity: 0.6, radius: fireballR, stroke: false }).addTo(impactLayer);
+            L.circle([lat, lng], { color: 'red', fillOpacity: 0.15, radius: blastR, weight: 1 }).addTo(impactLayer);
+
+            const deaths = Math.floor(yieldKt * 1400);
+            const total = parseInt(document.getElementById('g-deaths').innerText.replace(/,/g, '')) + deaths;
+            document.getElementById('g-deaths').innerText = total.toLocaleString();
+        }
+
+        function resetAll() {
+            impactLayer.clearLayers();
+            trajectoryLayer.clearLayers();
+            previewLayer.clearLayers();
+            document.getElementById('deck').innerHTML = "";
+            document.getElementById('g-deaths').innerText = "0";
+            document.getElementById('g-active').innerText = "0";
+            activeCellId = null;
+            createNewCell();
+        }
+
+        function getDist(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function formatTime(s) {
+            const m = Math.floor(s / 60); const sec = s % 60;
+            return `${m}:${sec < 10 ? '0' + sec : sec}`;
+        }
+
+        createNewCell();
+    </script>
+</body>
+
+</html>
