@@ -10,30 +10,77 @@
 </head>
 
 <body>
+    <header
+        style="height: 60px; background: #000; border-bottom: 1px solid #444; display: flex; align-items: left; padding: 0 20px; gap: 20px; z-index: 2000; position: relative;">
 
-    <header>
-        <div class="global-stats">
-            <div class="stat-item"><span id="g-deaths">0</span>
-                <div class="stat-label">TOTAL FATALITIES</div>
+        <div class="intel-search-container" style="position: relative; width: 300px; display: flex; align-items: left;">
+            <div
+                style="font-size: 0.9em; color: #ffffff; letter-spacing: 2px; font-weight: bold; white-space: nowrap; border-right: 1px solid #333; padding-right: 20px;">
+                ST-CMD
             </div>
-            <div class="stat-item"><span id="g-active">0</span>
-                <div class="stat-label">MISSILES IN-FLIGHT</div>
+            <input type="text" id="aircraft-search" placeholder="SEARCH ASSET ID..."
+                style="width: 100%; background: transparent; border: none; border-left: 1px solid #333; color: #0f0; font-family: 'IBM Plex Mono', monospace; padding: 5px 15px; font-size: 0.75em; outline: none;">
+
+            <div id="search-results"
+                style="position: absolute; top: 35px; left: 0; width: 100%; max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.9); border: 1px solid #333; z-index: 3000; font-size: 0.7em;">
             </div>
         </div>
-        <div style="font-weight: 900; letter-spacing: 3px; color: var(--red);">STRATCOM MONITOR</div>
-        <div class="header-controls">
-            <button class="btn-header" onclick="previewLayer.clearLayers()">CLEAR PREVIEWS</button>
-            <button class="btn-header" onclick="createNewCell()">+ ADD UNIT</button>
-            <button class="btn-header" onclick="resetAll()">RESET SYSTEM</button>
+
+        <div id="sidebar-intel-display"
+            style="display: none; position: absolute; top: 60px; left: 20px; width: 320px; max-height: 500px; background: rgba(5, 5, 5, 0.95); border: 1px solid #333; padding: 20px; box-sizing: border-box; z-index: 2500; backdrop-filter: blur(15px); box-shadow: 0 10px 30px rgba(0,0,0,0.8); border-radius: 2px;">
+
+            <div
+                style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 10px;">
+                <div style="display: flex; flex-direction: column;">
+                    <span
+                        style="color: #444; font-size: 0.55em; letter-spacing: 2px; font-weight: bold;">INTEL_QUERY_RESULTS</span>
+                    <span id="sb-name"
+                        style="color: #FFD700; font-weight: bold; font-size: 1em; letter-spacing: 1px;">--</span>
+                </div>
+                <button onclick="document.getElementById('sidebar-intel-display').style.display='none'"
+                    style="background: none; border: 1px solid #444; color: #666; cursor: pointer; padding: 2px 6px; font-family: 'IBM Plex Mono'; font-size: 0.7em; transition: 0.2s;"
+                    onmouseover="this.style.color='#FF3B3B'; this.style.borderColor='#FF3B3B'"
+                    onmouseout="this.style.color='#666'; this.style.borderColor='#444'">
+                    CLOSE
+                </button>
+            </div>
+
+            <div id="sb-details" style="font-size: 0.75em; color: #ccc; line-height: 1.6; margin-bottom: 15px;">
+            </div>
         </div>
+
     </header>
 
     <div id="visibility-panel">
-        <div style="font-size: 0.5em; color: #444; margin-bottom: 5px;">VISIBILITY OVERLAYS</div>
+
+        <div style="font-size: 1em; color: #ffffff; margin-bottom: 5px; letter-spacing: 1px;">SYSTEM STATUS</div>
+        <div class="global-stats" style="margin-bottom: 20px; border-bottom: 1px solid #ffffff; padding-bottom: 15px;">
+            <div class="stat-item">
+                <span id="g-deaths" style="color: var(--red); font-size: 1.2em;">0</span>
+                <div class="stat-label" style="font-size: 0.6em; color: #ffffff;">TOTAL FATALITIES</div>
+            </div>
+            <div class="stat-item">
+                <span id="g-active" style="color: var(--red); font-size: 1.2em;">0</span>
+                <div class="stat-label" style="font-size: 0.6em; color: #ffffff;">MISSILES IN-FLIGHT</div>
+            </div>
+        </div>
+
+        <div style="font-size: 1em; color: #ffffff; margin-bottom: 5px; letter-spacing: 1px;">SYSTEM MANAGEMENT</div>
+        <div class="panel-actions"
+            style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #ffffff; padding-bottom: 15px;">
+            <button class="btn-header" style="width: 100%; text-align: left;" onclick="previewLayer.clearLayers()">CLEAR
+                PREVIEWS</button>
+            <button class="btn-header" style="width: 100%; text-align: left;" onclick="createNewCell()">+ ADD
+                UNIT</button>
+            <button class="btn-header" style="width: 100%; text-align: left; color: #FF3B3B; border-color: #400;"
+                onclick="resetAll()">RESET SYSTEM</button>
+        </div>
+
+        <div style="font-size: 1em; color: #ffffff; margin-bottom: 8px; letter-spacing: 1px;">VISIBILITY OVERLAYS
+        </div>
         <label class="v-toggle"><input type="checkbox" checked onchange="toggleLayer(siloLayer, this.checked)"> ICBM
             SILO</label>
-        <label class="v-toggle"><input type="checkbox" checked onchange="toggleLayer(baseLayer, this.checked)"> US
-            MILITARY
+        <label class="v-toggle"><input type="checkbox" checked onchange="toggleLayer(baseLayer, this.checked)"> MILITARY
             BASES</label>
         <label class="v-toggle"><input type="checkbox" checked onchange="toggleLayer(previewLayer, this.checked)">
             IMPACT RADII</label>
@@ -80,13 +127,15 @@
     <div id="map"></div>
     <div id="deck"></div>
 
+
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
+    <script src="aircraft.js"></script>
 
 </html>
 
 </body>
-
 
 
 </html>
